@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Messaging.EventHubs.Consumer;
 
 namespace EchoBackend
 {
@@ -10,20 +11,21 @@ namespace EchoBackend
         {
             Console.WriteLine("IoT Hub Echo Backend");
 
-            if (args.Length == 0)
+            if (args.Length < 2)
             {
-                Console.WriteLine("Please pass eventHubEndpoint as first command line argument");
+                Console.WriteLine("Please pass eventHubEndpoint and eventHubName as command line arguments");
                 return;
             }
             
             var cancellationSource = new CancellationTokenSource();
 
             var cancellationToken = CreateExitHandlerToken(cancellationSource);
-            await ReceiveMessagesAsync(cancellationToken);
+            await ReceiveMessagesAsync(cancellationToken, args[0], args[1]);
         }
 
-        private static async Task ReceiveMessagesAsync(CancellationToken cancellationToken)
+        private static async Task ReceiveMessagesAsync(CancellationToken cancellationToken, string connectionString, string eventHubName)
         {
+            new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName, connectionString, eventHubName);
         }
 
         private static CancellationToken CreateExitHandlerToken(CancellationTokenSource cancellationSource)
