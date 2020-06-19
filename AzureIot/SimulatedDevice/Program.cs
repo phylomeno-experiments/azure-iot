@@ -18,12 +18,13 @@ namespace SimulatedDevice
                 return;
             }
 
-            SendMessagesToHubAsync(args[1]);
+            SendMessagesToHubAsync(args[0]);
             Console.ReadLine();
         }
 
         private static async void SendMessagesToHubAsync(string connectionString)
         {
+            Console.WriteLine(connectionString);
             var deviceClient = DeviceClient.CreateFromConnectionString(connectionString);
             var rand = new Random();
             while (true)
