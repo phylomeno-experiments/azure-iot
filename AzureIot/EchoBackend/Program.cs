@@ -12,7 +12,7 @@ namespace EchoBackend
 
             if (args.Length == 0)
             {
-                Console.WriteLine("Please pass eventHubEndpoiknt as first command line argument");
+                Console.WriteLine("Please pass eventHubEndpoint as first command line argument");
                 return;
             }
             
@@ -20,6 +20,10 @@ namespace EchoBackend
 
             var cancellationToken = CreateExitHandlerToken(cancellationSource);
             await ReceiveMessagesAsync(cancellationToken);
+        }
+
+        private static async Task ReceiveMessagesAsync(CancellationToken cancellationToken)
+        {
         }
 
         private static CancellationToken CreateExitHandlerToken(CancellationTokenSource cancellationSource)
@@ -37,11 +41,6 @@ namespace EchoBackend
 
             var cancellationToken = cancellationSource.Token;
             return cancellationToken;
-        }
-
-        private static async Task ReceiveMessagesAsync(CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
         }
     }
 }
