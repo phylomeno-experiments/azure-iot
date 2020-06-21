@@ -22,13 +22,24 @@ namespace SimulatedDevice
 
             ConnectDeviceClient(args[0]);
             await SendMessagesToCloudAsync();
-            await ReceiveCloudMessages();
+            ReceiveCloudMessagesAsync();
             Console.ReadLine();
         }
 
-        private static async Task ReceiveCloudMessages()
+        private static async void ReceiveCloudMessagesAsync()
         {
-            return;
+            Console.WriteLine("Receiving cloud messages");
+            while (true)
+            {
+                var receivedMessage = await _deviceClient.ReceiveAsync();
+                if (receivedMessage == null) continue;
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("Received message: {0}", Encoding.ASCII.GetString(receivedMessage.GetBytes()));
+                Console.ResetColor();
+
+                await _deviceClient.CompleteAsync(receivedMessage);
+            }
         }
 
         private static async Task SendMessagesToCloudAsync()
