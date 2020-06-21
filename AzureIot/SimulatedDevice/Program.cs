@@ -21,7 +21,7 @@ namespace SimulatedDevice
             }
 
             ConnectDeviceClient(args[0]);
-            await SendMessagesToCloudAsync();
+            SendMessagesToCloudAsync();
             ReceiveCloudMessagesAsync();
             Console.ReadLine();
         }
@@ -42,7 +42,7 @@ namespace SimulatedDevice
             }
         }
 
-        private static async Task SendMessagesToCloudAsync()
+        private static async void SendMessagesToCloudAsync()
         {
             var rand = new Random();
             while (true)
