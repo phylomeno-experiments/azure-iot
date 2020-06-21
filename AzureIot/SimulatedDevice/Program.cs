@@ -8,7 +8,9 @@ namespace SimulatedDevice
 {
     public class Program
     {
-        public static void Main(string[] args)
+        private static DeviceClient _deviceClient;
+
+        public static async Task Main(string[] args)
         {
             Console.WriteLine("IoT Hub Simulated Device");
 
@@ -18,14 +20,19 @@ namespace SimulatedDevice
                 return;
             }
 
-            SendMessagesToHubAsync(args[0]);
+            ConnectDeviceClient(args[0]);
+            await SendMessagesToCloudAsync();
+            await ReceiveCloudMessages();
             Console.ReadLine();
         }
 
-        private static async void SendMessagesToHubAsync(string connectionString)
+        private static async Task ReceiveCloudMessages()
         {
-            Console.WriteLine(connectionString);
-            var deviceClient = DeviceClient.CreateFromConnectionString(connectionString);
+            return;
+        }
+
+        private static async Task SendMessagesToCloudAsync()
+        {
             var rand = new Random();
             while (true)
             {
@@ -35,11 +42,17 @@ namespace SimulatedDevice
                 });
 
                 var message = new Message(Encoding.ASCII.GetBytes(messageJson));
-                await deviceClient.SendEventAsync(message);
+                await _deviceClient.SendEventAsync(message);
                 Console.WriteLine("{0} - Sending message {1}", DateTime.Now, messageJson);
 
                 await Task.Delay(1000);
             }
+        }
+
+        private static void ConnectDeviceClient(string connectionString)
+        {
+            Console.WriteLine(connectionString);
+            _deviceClient = DeviceClient.CreateFromConnectionString(connectionString);
         }
     }
 }
