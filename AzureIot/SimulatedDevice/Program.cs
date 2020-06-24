@@ -73,18 +73,27 @@ namespace SimulatedDevice
             _deviceClient = DeviceClient.CreateFromConnectionString(connectionString);
         }
 
-        private static Task<MethodResponse> OnMyMethod(MethodRequest methodRequest, object userContext)
+        private static async Task<MethodResponse> OnMyMethod(MethodRequest methodRequest, object userContext)
         {
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine("my-method invoked");
+            try
+            {
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.WriteLine("my-method invoked");
 
-            var reportedProperties = new TwinCollection {["invocationTime"] = DateTime.Now};
 
-            _deviceClient.UpdateReportedPropertiesAsync(reportedProperties).Wait();
+                var reportedProperties = new TwinCollection {["invocationTime"] = DateTime.Now};
+
+                await _deviceClient.UpdateReportedPropertiesAsync(reportedProperties);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("my-method invocation failed");
+                Console.WriteLine(e);
+            }
 
             var result = @"{""result"":""My method invoked.""}";
             Console.ResetColor();
-            return Task.FromResult(new MethodResponse(Encoding.UTF8.GetBytes(result), 200));
+            return new MethodResponse(Encoding.UTF8.GetBytes(result), 200);
         }
     }
 }

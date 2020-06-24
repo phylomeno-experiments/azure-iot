@@ -51,7 +51,7 @@ namespace EchoBackend
 
                     else if (messagesReceived % 10 == 0)
                     {
-                        var method = new CloudToDeviceMethod("my-method") {ResponseTimeout = TimeSpan.FromSeconds(10)};
+                        var method = new CloudToDeviceMethod("my-method") {ResponseTimeout = TimeSpan.FromSeconds(30)};
                         var result = await serviceClient.InvokeDeviceMethodAsync(deviceId, method, cancellationToken);
                         Console.WriteLine("Invoked method on device");
                         var twin = await registryManager.GetTwinAsync(deviceId, cancellationToken);
