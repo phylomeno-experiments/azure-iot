@@ -30,10 +30,10 @@ namespace EchoBackend
             await using var client = new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName, eventHubCompatibleConnectionString, eventHubName);
 
             var serviceClient = ServiceClient.CreateFromConnectionString(serviceClientConnectionString);
-            
+            var registryManager = RegistryManager.CreateFromConnectionString(serviceClientConnectionString);
             try
             {
-                int messagesReceived = 0;
+                var messagesReceived = 0;
                 await foreach (var partitionEvent in client.ReadEventsAsync(cancellationToken))
                 {
                     Console.WriteLine("Message received on partition {0}", partitionEvent.Partition.PartitionId);
@@ -41,11 +41,21 @@ namespace EchoBackend
                     Console.WriteLine("\t{0}", data);
 
                     messagesReceived++;
+                    var deviceId = partitionEvent.Data.SystemProperties["iothub-connection-device-id"].ToString();
                     if (messagesReceived % 50 == 0)
                     {
-                        var devicedId = partitionEvent.Data.SystemProperties["iothub-connection-device-id"].ToString();
                         var message = new Message(Encoding.ASCII.GetBytes("My first Cloud-to-Device message"));
-                        await serviceClient.SendAsync(devicedId, message);
+                        await serviceClient.SendAsync(deviceId, message);
+                        Console.WriteLine("Sent message to device");
+                    }
+
+                    else if (messagesReceived % 10 == 0)
+                    {
+                        var method = new CloudToDeviceMethod("my-method") {ResponseTimeout = TimeSpan.FromSeconds(10)};
+                        var result = await serviceClient.InvokeDeviceMethodAsync(deviceId, method, cancellationToken);
+                        Console.WriteLine("Invoked method on device");
+                        var twin = await registryManager.GetTwinAsync(deviceId, cancellationToken);
+                        Console.WriteLine(twin.Properties.Reported.ToJson());
                     }
                 }
             }

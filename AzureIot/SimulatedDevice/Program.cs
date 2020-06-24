@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.Devices.Client;
+using Microsoft.Azure.Devices.Shared;
 using Newtonsoft.Json;
 
 namespace SimulatedDevice
@@ -23,7 +24,13 @@ namespace SimulatedDevice
             ConnectDeviceClient(args[0]);
             SendMessagesToCloudAsync();
             ReceiveCloudMessagesAsync();
+            WaitForMethodInvocations();
             Console.ReadLine();
+        }
+
+        private static void WaitForMethodInvocations()
+        {
+            _deviceClient.SetMethodHandlerAsync("my-method", OnMyMethod, null).Wait();
         }
 
         private static async void ReceiveCloudMessagesAsync()
@@ -64,6 +71,19 @@ namespace SimulatedDevice
         {
             Console.WriteLine(connectionString);
             _deviceClient = DeviceClient.CreateFromConnectionString(connectionString);
+        }
+
+        private static Task<MethodResponse> OnMyMethod(MethodRequest methodRequest, object userContext)
+        {
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("my-method invoked");
+
+            var reportedProperties = new TwinCollection {["invocationTime"] = DateTime.Now};
+
+            _deviceClient.UpdateReportedPropertiesAsync(reportedProperties).Wait();
+
+            var result = @"{""result"":""My method invoked.""}";
+            return Task.FromResult(new MethodResponse(Encoding.UTF8.GetBytes(result), 200));
         }
     }
 }
