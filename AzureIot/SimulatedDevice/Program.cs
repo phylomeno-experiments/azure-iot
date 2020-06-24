@@ -83,6 +83,7 @@ namespace SimulatedDevice
             _deviceClient.UpdateReportedPropertiesAsync(reportedProperties).Wait();
 
             var result = @"{""result"":""My method invoked.""}";
+            Console.ResetColor();
             return Task.FromResult(new MethodResponse(Encoding.UTF8.GetBytes(result), 200));
         }
     }
