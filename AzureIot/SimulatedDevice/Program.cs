@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.Devices.Client;
@@ -25,7 +26,20 @@ namespace SimulatedDevice
             SendMessagesToCloudAsync();
             ReceiveCloudMessagesAsync();
             WaitForMethodInvocations();
+            SentToBlobAsync();
             Console.ReadLine();
+        }
+
+        private static async void SentToBlobAsync()
+        {
+            const string fileName = "sample-image.png";
+            Console.WriteLine("Uploading file: {0}", fileName);
+
+            using (var fileStream = new FileStream(fileName, FileMode.Open))
+            {
+                await _deviceClient.UploadToBlobAsync(fileName, fileStream);
+            }
+            Console.WriteLine("File uploaded");
         }
 
         private static void WaitForMethodInvocations()
