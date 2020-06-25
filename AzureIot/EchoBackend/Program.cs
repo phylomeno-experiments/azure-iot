@@ -7,29 +7,34 @@ using Microsoft.Azure.Devices;
 
 namespace EchoBackend
 {
-    class Program
+    internal class Program
     {
-        static async Task Main(string[] args)
+        private static async Task Main(string[] args)
         {
             Console.WriteLine("IoT Hub Echo Backend");
 
             if (args.Length < 3)
             {
-                Console.WriteLine("Please pass eventHubCompatibleEndpoint, eventHubName and serviceClientConnectionString as command line arguments");
+                Console.WriteLine(
+                    "Please pass eventHubCompatibleEndpoint, eventHubName and serviceClientConnectionString as command line arguments");
                 return;
             }
-            
+
             var cancellationSource = new CancellationTokenSource();
 
             var cancellationToken = CreateExitHandlerToken(cancellationSource);
             await ReceiveMessagesAsync(cancellationToken, args[0], args[1], args[2]);
         }
 
-        private static async Task ReceiveMessagesAsync(CancellationToken cancellationToken, string eventHubCompatibleConnectionString, string eventHubName, string serviceClientConnectionString)
+        private static async Task ReceiveMessagesAsync(CancellationToken cancellationToken,
+            string eventHubCompatibleConnectionString, string eventHubName, string serviceClientConnectionString)
         {
-            await using var client = new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName, eventHubCompatibleConnectionString, eventHubName);
+            await using var client = new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName,
+                eventHubCompatibleConnectionString, eventHubName);
 
             var serviceClient = ServiceClient.CreateFromConnectionString(serviceClientConnectionString);
+
+            await Task.Run(() => ListenForFileUploads(serviceClient), cancellationToken);
             var registryManager = RegistryManager.CreateFromConnectionString(serviceClientConnectionString);
             try
             {
@@ -61,7 +66,24 @@ namespace EchoBackend
             }
             catch (TaskCanceledException)
             {
+            }
+        }
 
+        private static async void ListenForFileUploads(ServiceClient serviceClient)
+        {
+            var notificationReceiver = serviceClient.GetFileNotificationReceiver();
+            Console.WriteLine("Listening for file upload notifications");
+            while (true)
+            {
+                var fileUploadNotification = await notificationReceiver.ReceiveAsync();
+                if (fileUploadNotification == null) continue;
+
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                Console.WriteLine("Received file upload notification: {0}",
+                    string.Join(" ", fileUploadNotification.BlobName));
+                Console.ResetColor();
+
+                await notificationReceiver.CompleteAsync(fileUploadNotification);
             }
         }
 
