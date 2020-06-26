@@ -53,9 +53,7 @@ namespace EchoBackend
                     var deviceId = partitionEvent.Data.SystemProperties["iothub-connection-device-id"].ToString();
                     if (messagesReceived % 50 == 0)
                     {
-                        var message = new Message(Encoding.ASCII.GetBytes("My first Cloud-to-Device message"));
-                        await _serviceClient.SendAsync(deviceId, message);
-                        Console.WriteLine("Sent message to device");
+                        await SendMessageToDevice(deviceId);
                     }
 
                     else if (messagesReceived % 10 == 0)
@@ -67,6 +65,13 @@ namespace EchoBackend
             catch (TaskCanceledException)
             {
             }
+        }
+
+        private static async Task SendMessageToDevice(string deviceId)
+        {
+            var message = new Message(Encoding.ASCII.GetBytes("My first Cloud-to-Device message"));
+            await _serviceClient.SendAsync(deviceId, message);
+            Console.WriteLine("Sent message to device");
         }
 
         private static async Task InvokeDeviceMethod(CancellationToken cancellationToken, string deviceId)
