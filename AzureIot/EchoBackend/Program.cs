@@ -9,6 +9,10 @@ namespace EchoBackend
 {
     internal class Program
     {
+        private static ServiceClient _serviceClient;
+        private static EventHubConsumerClient _eventHubConsumerClient;
+        private static RegistryManager _registryManager;
+
         private static async Task Main(string[] args)
         {
             Console.WriteLine("IoT Hub Echo Backend");
@@ -29,17 +33,17 @@ namespace EchoBackend
         private static async Task ReceiveMessagesAsync(CancellationToken cancellationToken,
             string eventHubCompatibleConnectionString, string eventHubName, string serviceClientConnectionString)
         {
-            await using var client = new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName,
+            _eventHubConsumerClient = new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName,
                 eventHubCompatibleConnectionString, eventHubName);
 
-            var serviceClient = ServiceClient.CreateFromConnectionString(serviceClientConnectionString);
+            _serviceClient = ServiceClient.CreateFromConnectionString(serviceClientConnectionString);
 
-            await Task.Run(() => ListenForFileUploads(serviceClient), cancellationToken);
-            var registryManager = RegistryManager.CreateFromConnectionString(serviceClientConnectionString);
+            await Task.Run(() => ListenForFileUploads(_serviceClient), cancellationToken);
+            _registryManager = RegistryManager.CreateFromConnectionString(serviceClientConnectionString);
             try
             {
                 var messagesReceived = 0;
-                await foreach (var partitionEvent in client.ReadEventsAsync(cancellationToken))
+                await foreach (var partitionEvent in _eventHubConsumerClient.ReadEventsAsync(cancellationToken))
                 {
                     Console.WriteLine("Message received on partition {0}", partitionEvent.Partition.PartitionId);
                     var data = Encoding.UTF8.GetString(partitionEvent.Data.Body.ToArray());
@@ -50,23 +54,28 @@ namespace EchoBackend
                     if (messagesReceived % 50 == 0)
                     {
                         var message = new Message(Encoding.ASCII.GetBytes("My first Cloud-to-Device message"));
-                        await serviceClient.SendAsync(deviceId, message);
+                        await _serviceClient.SendAsync(deviceId, message);
                         Console.WriteLine("Sent message to device");
                     }
 
                     else if (messagesReceived % 10 == 0)
                     {
-                        var method = new CloudToDeviceMethod("my-method") {ResponseTimeout = TimeSpan.FromSeconds(30)};
-                        var result = await serviceClient.InvokeDeviceMethodAsync(deviceId, method, cancellationToken);
-                        Console.WriteLine("Invoked method on device");
-                        var twin = await registryManager.GetTwinAsync(deviceId, cancellationToken);
-                        Console.WriteLine(twin.Properties.Reported.ToJson());
+                        await InvokeDeviceMethod(cancellationToken, deviceId);
                     }
                 }
             }
             catch (TaskCanceledException)
             {
             }
+        }
+
+        private static async Task InvokeDeviceMethod(CancellationToken cancellationToken, string deviceId)
+        {
+            var method = new CloudToDeviceMethod("my-method") {ResponseTimeout = TimeSpan.FromSeconds(30)};
+            await _serviceClient.InvokeDeviceMethodAsync(deviceId, method, cancellationToken);
+            Console.WriteLine("Invoked method on device");
+            var twin = await _registryManager.GetTwinAsync(deviceId, cancellationToken);
+            Console.WriteLine(twin.Properties.Reported.ToJson());
         }
 
         private static async void ListenForFileUploads(ServiceClient serviceClient)
