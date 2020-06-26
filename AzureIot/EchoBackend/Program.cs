@@ -27,11 +27,13 @@ namespace EchoBackend
             var cancellationSource = new CancellationTokenSource();
 
             var cancellationToken = CreateExitHandlerToken(cancellationSource);
-            await ReceiveMessagesAsync(cancellationToken, args[0], args[1], args[2]);
+            SetupClients(args[0], args[1], args[2]);
+            await Task.Run(() => ListenForFileUploads(_serviceClient), cancellationToken);
+            await ListenForMessages(cancellationToken);
         }
 
-        private static async Task ReceiveMessagesAsync(CancellationToken cancellationToken,
-            string eventHubCompatibleConnectionString, string eventHubName, string serviceClientConnectionString)
+        private static void SetupClients(string eventHubCompatibleConnectionString, string eventHubName,
+            string serviceClientConnectionString)
         {
             _eventHubConsumerClient = new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName,
                 eventHubCompatibleConnectionString, eventHubName);
@@ -39,8 +41,6 @@ namespace EchoBackend
             _serviceClient = ServiceClient.CreateFromConnectionString(serviceClientConnectionString);
 
             _registryManager = RegistryManager.CreateFromConnectionString(serviceClientConnectionString);
-            await Task.Run(() => ListenForFileUploads(_serviceClient), cancellationToken);
-            await ListenForMessages(cancellationToken);
         }
 
         private static async Task ListenForMessages(CancellationToken cancellationToken)
