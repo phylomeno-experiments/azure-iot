@@ -12,6 +12,7 @@ namespace EchoBackend
         private static ServiceClient _serviceClient;
         private static EventHubConsumerClient _eventHubConsumerClient;
         private static RegistryManager _registryManager;
+        private static CancellationToken _cancellationToken;
 
         private static async Task Main(string[] args)
         {
@@ -24,12 +25,22 @@ namespace EchoBackend
                 return;
             }
 
+            SetupCancellationToken();
+            SetupClients(args[0], args[1], args[2]);
+            await HandleFileUploads();
+            await ListenForMessages();
+        }
+
+        private static async Task HandleFileUploads()
+        {
+            await Task.Run(() => ListenForFileUploads(_serviceClient), _cancellationToken);
+        }
+
+        private static void SetupCancellationToken()
+        {
             var cancellationSource = new CancellationTokenSource();
 
-            var cancellationToken = CreateExitHandlerToken(cancellationSource);
-            SetupClients(args[0], args[1], args[2]);
-            await Task.Run(() => ListenForFileUploads(_serviceClient), cancellationToken);
-            await ListenForMessages(cancellationToken);
+            _cancellationToken = CreateExitHandlerToken(cancellationSource);
         }
 
         private static void SetupClients(string eventHubCompatibleConnectionString, string eventHubName,
@@ -43,12 +54,12 @@ namespace EchoBackend
             _registryManager = RegistryManager.CreateFromConnectionString(serviceClientConnectionString);
         }
 
-        private static async Task ListenForMessages(CancellationToken cancellationToken)
+        private static async Task ListenForMessages()
         {
             try
             {
                 var messagesReceived = 0;
-                await foreach (var partitionEvent in _eventHubConsumerClient.ReadEventsAsync(cancellationToken))
+                await foreach (var partitionEvent in _eventHubConsumerClient.ReadEventsAsync(_cancellationToken))
                 {
                     Console.WriteLine("Message received on partition {0}", partitionEvent.Partition.PartitionId);
                     var data = Encoding.UTF8.GetString(partitionEvent.Data.Body.ToArray());
@@ -63,7 +74,7 @@ namespace EchoBackend
 
                     else if (messagesReceived % 10 == 0)
                     {
-                        await InvokeDeviceMethod(cancellationToken, deviceId);
+                        await InvokeDeviceMethod(_cancellationToken, deviceId);
                     }
                 }
             }
