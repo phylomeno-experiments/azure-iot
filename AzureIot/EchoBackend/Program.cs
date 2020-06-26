@@ -31,16 +31,22 @@ namespace EchoBackend
             await ListenForMessages();
         }
 
-        private static async Task HandleFileUploads()
-        {
-            await Task.Run(() => ListenForFileUploads(_serviceClient), _cancellationToken);
-        }
-
         private static void SetupCancellationToken()
         {
             var cancellationSource = new CancellationTokenSource();
 
-            _cancellationToken = CreateExitHandlerToken(cancellationSource);
+            void CancelKeyPressHandler(object sender, ConsoleCancelEventArgs eventArgs)
+            {
+                eventArgs.Cancel = true;
+                cancellationSource.Cancel();
+                Console.WriteLine("Exiting...");
+
+                Console.CancelKeyPress -= CancelKeyPressHandler;
+            }
+
+            Console.CancelKeyPress += CancelKeyPressHandler;
+
+            _cancellationToken = cancellationSource.Token;
         }
 
         private static void SetupClients(string eventHubCompatibleConnectionString, string eventHubName,
@@ -52,6 +58,11 @@ namespace EchoBackend
             _serviceClient = ServiceClient.CreateFromConnectionString(serviceClientConnectionString);
 
             _registryManager = RegistryManager.CreateFromConnectionString(serviceClientConnectionString);
+        }
+
+        private static async Task HandleFileUploads()
+        {
+            await Task.Run(() => ListenForFileUploads(_serviceClient), _cancellationToken);
         }
 
         private static async Task ListenForMessages()
@@ -74,7 +85,7 @@ namespace EchoBackend
 
                     else if (messagesReceived % 10 == 0)
                     {
-                        await InvokeDeviceMethod(_cancellationToken, deviceId);
+                        await InvokeDeviceMethod(deviceId);
                     }
                 }
             }
@@ -90,12 +101,12 @@ namespace EchoBackend
             Console.WriteLine("Sent message to device");
         }
 
-        private static async Task InvokeDeviceMethod(CancellationToken cancellationToken, string deviceId)
+        private static async Task InvokeDeviceMethod(string deviceId)
         {
             var method = new CloudToDeviceMethod("my-method") {ResponseTimeout = TimeSpan.FromSeconds(30)};
-            await _serviceClient.InvokeDeviceMethodAsync(deviceId, method, cancellationToken);
+            await _serviceClient.InvokeDeviceMethodAsync(deviceId, method, _cancellationToken);
             Console.WriteLine("Invoked method on device");
-            var twin = await _registryManager.GetTwinAsync(deviceId, cancellationToken);
+            var twin = await _registryManager.GetTwinAsync(deviceId, _cancellationToken);
             Console.WriteLine(twin.Properties.Reported.ToJson());
         }
 
@@ -115,23 +126,6 @@ namespace EchoBackend
 
                 await notificationReceiver.CompleteAsync(fileUploadNotification);
             }
-        }
-
-        private static CancellationToken CreateExitHandlerToken(CancellationTokenSource cancellationSource)
-        {
-            void CancelKeyPressHandler(object sender, ConsoleCancelEventArgs eventArgs)
-            {
-                eventArgs.Cancel = true;
-                cancellationSource.Cancel();
-                Console.WriteLine("Exiting...");
-
-                Console.CancelKeyPress -= CancelKeyPressHandler;
-            }
-
-            Console.CancelKeyPress += CancelKeyPressHandler;
-
-            var cancellationToken = cancellationSource.Token;
-            return cancellationToken;
         }
     }
 }
