@@ -38,8 +38,13 @@ namespace EchoBackend
 
             _serviceClient = ServiceClient.CreateFromConnectionString(serviceClientConnectionString);
 
-            await Task.Run(() => ListenForFileUploads(_serviceClient), cancellationToken);
             _registryManager = RegistryManager.CreateFromConnectionString(serviceClientConnectionString);
+            await Task.Run(() => ListenForFileUploads(_serviceClient), cancellationToken);
+            await ListenForMessages(cancellationToken);
+        }
+
+        private static async Task ListenForMessages(CancellationToken cancellationToken)
+        {
             try
             {
                 var messagesReceived = 0;
