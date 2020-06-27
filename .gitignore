@@ -4,6 +4,7 @@ bin
 *.user
 
 *.crt
+*.cer
 *.key
 *.pfx
 *.csr
