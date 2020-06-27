@@ -12,7 +12,7 @@ namespace AutoProvisionedDevice
 {
     internal class Program
     {
-        private const string CertificateFileName = "auth-cert.pem";
+        private const string CertificateFileName = "device1.pfx";
         private const string CertificateFilePassword = "password";
 
         private static async Task Main(string[] args)
