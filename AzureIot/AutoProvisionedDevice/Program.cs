@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Microsoft.Azure.Devices.Client;
@@ -10,11 +11,15 @@ namespace AutoProvisionedDevice
 {
     internal class Program
     {
+        private const string CertificateFileName = "auth-cert.pem";
+        private const string CertificateFilePassword = "password";
+
         private static async void Main(string[] args)
         {
-            X509Certificate2 certificate;
+            var certificate = LoadCertificate();
             DeviceAuthenticationWithX509Certificate auth;
             string iotHub;
+
             using (var security = new SecurityProviderX509Certificate(certificate))
             {
                 using (var transport = new ProvisioningTransportHandlerMqtt())
@@ -40,6 +45,33 @@ namespace AutoProvisionedDevice
 
                 Console.WriteLine("Sent message");
             }
+        }
+
+        private static X509Certificate2 LoadCertificate()
+        {
+            var certificateCollection = new X509Certificate2Collection();
+            certificateCollection.Import(CertificateFileName, CertificateFilePassword, X509KeyStorageFlags.UserKeySet);
+
+            X509Certificate2 finalCertificate = null;
+            foreach (var certificate in certificateCollection)
+            {
+                if (finalCertificate == null && certificate.HasPrivateKey)
+                {
+                    finalCertificate = certificate;
+                }
+                else
+                {
+                    certificate.Dispose();
+                }
+            }
+
+            if (finalCertificate == null)
+            {
+                throw new FileNotFoundException(
+                    $"File {CertificateFileName} did not contain certificate with private key");
+            }
+
+            return finalCertificate;
         }
     }
 }
