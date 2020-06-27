@@ -2,3 +2,10 @@ obj
 bin
 .vs
 *.user
+
+*.crt
+*.key
+*.pfx
+*.csr
+*.pem
+*.srl
