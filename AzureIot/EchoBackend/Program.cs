@@ -36,6 +36,12 @@ namespace EchoBackend
         private static async Task TagAndQueryDevices()
         {
             var twin = await _registryManager.GetTwinAsync("device1");
+            var twin2 = await _registryManager.GetTwinAsync("phylomeno-pi");
+            foreach (var property in twin2.Properties.Reported)
+            {
+                Console.WriteLine($"Reported property: {property}");
+            }
+
             var tagsPatch = @"{
                 tags: {
                     provisioning: {
