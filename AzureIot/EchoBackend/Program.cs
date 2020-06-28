@@ -30,17 +30,13 @@ namespace EchoBackend
             SetupClients(args[0], args[1], args[2]);
             await HandleFileUploads();
             await TagAndQueryDevices();
+            await ReadReportedProperties();
             await ListenForMessages();
         }
 
         private static async Task TagAndQueryDevices()
         {
             var twin = await _registryManager.GetTwinAsync("device1");
-            var twin2 = await _registryManager.GetTwinAsync("phylomeno-pi");
-            foreach (var property in twin2.Properties.Reported)
-            {
-                Console.WriteLine($"Reported property: {property}");
-            }
 
             var tagsPatch = @"{
                 tags: {
@@ -57,6 +53,15 @@ namespace EchoBackend
 
             var autoProvisionedTwin = await twinQuery.GetNextAsTwinAsync();
             Console.WriteLine($"{autoProvisionedTwin.First().DeviceId} was auto-provisioned");
+        }
+
+        private static async Task ReadReportedProperties()
+        {
+            var twin2 = await _registryManager.GetTwinAsync("phylomeno-pi");
+            foreach (var property in twin2.Properties.Reported)
+            {
+                Console.WriteLine($"Reported property: {property}");
+            }
         }
 
         private static void SetupCancellationToken()
