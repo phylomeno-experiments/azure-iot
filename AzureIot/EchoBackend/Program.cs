@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,6 +45,12 @@ namespace EchoBackend
             }";
 
             await _registryManager.UpdateTwinAsync(twin.DeviceId, tagsPatch, twin.ETag);
+
+            var twinQuery = _registryManager.CreateQuery(
+                "SELECT * FROM devices WHERE tags.provisioning.method = 'auto'", 100);
+
+            var autoProvisionedTwin = await twinQuery.GetNextAsTwinAsync();
+            Console.WriteLine($"{autoProvisionedTwin.First().DeviceId} was auto-provisioned");
         }
 
         private static void SetupCancellationToken()
