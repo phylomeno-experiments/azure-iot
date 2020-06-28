@@ -28,7 +28,22 @@ namespace EchoBackend
             SetupCancellationToken();
             SetupClients(args[0], args[1], args[2]);
             await HandleFileUploads();
+            await TagAndQueryDevices();
             await ListenForMessages();
+        }
+
+        private static async Task TagAndQueryDevices()
+        {
+            var twin = await _registryManager.GetTwinAsync("device1");
+            var tagsPatch = @"{
+                tags: {
+                    provisioning: {
+                        method: 'auto'
+                    }
+                }
+            }";
+
+            await _registryManager.UpdateTwinAsync(twin.DeviceId, tagsPatch, twin.ETag);
         }
 
         private static void SetupCancellationToken()
