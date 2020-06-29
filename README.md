@@ -35,3 +35,8 @@ openssl x509 -req -in device1.csr -CA myCA.pem -CAkey myCA.key -CAcreateserial -
 ```
 openssl pkcs12 -export -out device1.pfx -inkey device1.key -in device1.crt
 ```
+
+## Azure IoT Central
+```
+az iot central app monitor-events --app-id phylomeno --properties all
+```
